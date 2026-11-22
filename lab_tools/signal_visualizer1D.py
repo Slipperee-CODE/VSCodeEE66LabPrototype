@@ -51,10 +51,10 @@ class DTSignalFromCTSignal:
 class DTSignalFromCTSignalAndCTSignal:
     x: SignalFunc
     sample_rate: SupportsIndex
-    axis_func1_settings: dict
-    axis_func2_settings: dict
-    axis_func1: str = "stem"
-    axis_func2: str = "plot"
+    axis_func_DT_settings: dict
+    axis_func_CT_settings: dict
+    axis_func_DT: str = "stem"
+    axis_func_CT: str = "plot"
     x_label: str = "time"
     y_label: str = "amplitude"
 
@@ -93,11 +93,11 @@ def find_and_create_visualization(x: Signal, ax: Axes, start_pos: float, end_pos
             ax.set_xlabel(x_label)
             ax.set_ylabel(y_label)
 
-        case DTSignalFromCTSignalAndCTSignal(x=ct, sample_rate=sample_rate, axis_func1_settings=axis_func1_settings, axis_func2_settings=axis_func2_settings, axis_func1=axis_func1, axis_func2=axis_func2, x_label=x_label, y_label=y_label):
-            axis_func1_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
-            visualize_DT_from_CT_signal(ct, getattr(ax, axis_func1), axis_func1_settings, start_pos, end_pos, sample_rate)
-            axis_func2_settings["label"] = f"CT for {sample_rate} sample_rate"
-            visualize_CT_signal(ct, getattr(ax, axis_func2), axis_func2_settings, start_pos, end_pos)
+        case DTSignalFromCTSignalAndCTSignal(x=ct, sample_rate=sample_rate, axis_func_DT_settings=axis_func_DT_settings, axis_func_CT_settings=axis_func_CT_settings, axis_func_DT=axis_func_DT, axis_func_CT=axis_func_CT, x_label=x_label, y_label=y_label):
+            axis_func_DT_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
+            visualize_DT_from_CT_signal(ct, getattr(ax, axis_func_DT), axis_func_DT_settings, start_pos, end_pos, sample_rate)
+            axis_func_CT_settings["label"] = f"CT for {sample_rate} sample_rate"
+            visualize_CT_signal(ct, getattr(ax, axis_func_CT), axis_func_CT_settings, start_pos, end_pos)
             ax.set_xlabel(x_label)
             ax.set_ylabel(y_label)
 
