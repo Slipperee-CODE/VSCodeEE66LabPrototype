@@ -11,60 +11,58 @@ from typing import ClassVar
 
 type SignalFunc = Callable[[float],float]
 
-def visualize_signal(axis_func, x: SignalFunc, ps: np.ndarray):
+def visualize_signal(axis_func, axis_func_settings, x: SignalFunc, ps: np.ndarray):
     x = np.vectorize(x)
     sampled_x = x(ps)
-    axis_func(ps, sampled_x)
+    axis_func(ps, sampled_x, **axis_func_settings)
 
-def create_plot_func(axis: Axes, plot_settings: dict):
-    def plot(xs, ys):
-        axis.plot(xs, ys, **plot_settings)
-    return plot
+def visualize_DT_from_CT_signal(x: SignalFunc, axis_func, axis_func_settings, start_pos: float, end_pos: float, sample_rate: SupportsIndex):
+    visualize_signal(axis_func, axis_func_settings, x, np.linspace(start_pos, end_pos, int(int(sample_rate)*(end_pos-start_pos))))
 
-def create_stem_func(axis: Axes, stem_settings: dict):
-    def stem(xs, ys):
-        axis.stem(xs, ys, **stem_settings)
-    return stem
+def visualize_CT_signal(x: SignalFunc, axis_func, axis_func_settings, start_pos, end_pos):
+    visualize_DT_from_CT_signal(x, axis_func, axis_func_settings, start_pos, end_pos, 1000)
 
-def visualize_DT_from_CT_signal(x: SignalFunc, axis_func, start_pos: float, end_pos: float, sample_rate: SupportsIndex):
-    visualize_signal(axis_func, x, np.linspace(start_pos, end_pos, int(int(sample_rate)*(end_pos-start_pos))))
+def visualize_DT_signal(x: SignalFunc, axis_func, axis_func_settings, start_pos, end_pos):
+    visualize_DT_from_CT_signal(x, axis_func, axis_func_settings, start_pos, end_pos, 1)
 
-def visualize_CT_signal(x: SignalFunc, axis_func, start_pos, end_pos):
-    visualize_DT_from_CT_signal(x, axis_func, start_pos, end_pos, 1000)
-
-def visualize_DT_signal(x: SignalFunc, axis_func, start_pos, end_pos):
-    visualize_DT_from_CT_signal(x, axis_func, start_pos, end_pos, 1)
+class AXES_SETTINGS:
+    DEFAULT_STEM: ClassVar[dict] = {"linefmt":'C1-', "markerfmt":'C1o', "basefmt":' ', "label":'DT Signal'}
+    DEFAULT_BAR: ClassVar[dict] = {"width":0.6, "color":'#3b82f6', "edgecolor":'black', "linewidth":0.8, "label":'DT Signal'}
+    DEFAULT_PLOT: ClassVar[dict] = {"color":'0.75', "lw":1.2, "label":'CT Signal'}
 
 @dataclass
 class DTSignal:
     x: SignalFunc
-    stem_settings: dict
-    DEFAULT_STEM: ClassVar[dict] = {"linefmt":'C1-', "markerfmt":'C1o', "basefmt":' ', "label":'DT Signal'}
+    axis_func_settings: dict
+    axis_func: str = "stem"
     x_label: str = "time"
     y_label: str = "amplitude"
 
 @dataclass
 class DTSignalFromCTSignal:
     x: SignalFunc
-    stem_settings: dict
     sample_rate: SupportsIndex
+    axis_func_settings: dict
+    axis_func: str = "stem"
     x_label: str = "time"
     y_label: str = "amplitude"
 
 @dataclass
 class DTSignalFromCTSignalAndCTSignal:
     x: SignalFunc
-    stem_settings: dict
-    plot_settings: dict
     sample_rate: SupportsIndex
+    axis_func1_settings: dict
+    axis_func2_settings: dict
+    axis_func1: str = "stem"
+    axis_func2: str = "plot"
     x_label: str = "time"
     y_label: str = "amplitude"
 
 @dataclass
 class CTSignal:
     x: SignalFunc
-    plot_settings: dict
-    DEFAULT_PLOT: ClassVar[dict] = {"color":'0.75', "lw":1.2, "label":'CT Signal'}
+    axis_func_settings: dict
+    axis_func: str = "plot"
     x_label: str = "time"
     y_label: str = "amplitude"
 
@@ -84,27 +82,27 @@ def show_many_overlapped_signals(xs: list[Signal], start_pos: float, end_pos: fl
 
 def find_and_create_visualization(x: Signal, ax: Axes, start_pos: float, end_pos: float):
     match x:
-        case DTSignal(x=dt, x_label=x_label, y_label=y_label, stem_settings=stem_settings):
-            visualize_DT_signal(dt, create_stem_func(ax, stem_settings), start_pos, end_pos)
+        case DTSignal(x=dt, axis_func_settings=axis_func_settings, axis_func=axis_func, x_label=x_label, y_label=y_label):
+            visualize_DT_signal(dt, getattr(ax, axis_func), axis_func_settings, start_pos, end_pos)
             ax.set_xlabel(x_label)
             ax.set_ylabel(y_label)
 
-        case DTSignalFromCTSignal(x=ct, x_label=x_label, y_label=y_label, stem_settings=stem_settings, sample_rate=sample_rate):
-            stem_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
-            visualize_DT_from_CT_signal(ct, create_stem_func(ax, stem_settings), start_pos, end_pos, sample_rate)
+        case DTSignalFromCTSignal(x=ct, sample_rate=sample_rate, axis_func_settings=axis_func_settings, axis_func=axis_func, x_label=x_label, y_label=y_label):
+            axis_func_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
+            visualize_DT_from_CT_signal(ct, getattr(ax, axis_func), axis_func_settings, start_pos, end_pos, sample_rate)
             ax.set_xlabel(x_label)
             ax.set_ylabel(y_label)
 
-        case DTSignalFromCTSignalAndCTSignal(x=ct, x_label=x_label, y_label=y_label, stem_settings=stem_settings, plot_settings=plot_settings, sample_rate=sample_rate):
-            stem_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
-            visualize_DT_from_CT_signal(ct, create_stem_func(ax, stem_settings), start_pos, end_pos, sample_rate)
-            plot_settings["label"] = f"CT for {sample_rate} sample_rate"
-            visualize_CT_signal(ct, create_plot_func(ax, plot_settings), start_pos, end_pos)
+        case DTSignalFromCTSignalAndCTSignal(x=ct, sample_rate=sample_rate, axis_func1_settings=axis_func1_settings, axis_func2_settings=axis_func2_settings, axis_func1=axis_func1, axis_func2=axis_func2, x_label=x_label, y_label=y_label):
+            axis_func1_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
+            visualize_DT_from_CT_signal(ct, getattr(ax, axis_func1), axis_func1_settings, start_pos, end_pos, sample_rate)
+            axis_func2_settings["label"] = f"CT for {sample_rate} sample_rate"
+            visualize_CT_signal(ct, getattr(ax, axis_func2), axis_func2_settings, start_pos, end_pos)
             ax.set_xlabel(x_label)
             ax.set_ylabel(y_label)
 
-        case CTSignal(x=ct, x_label=x_label, y_label=y_label, plot_settings=plot_settings):
-            visualize_CT_signal(ct, create_plot_func(ax, plot_settings), start_pos, end_pos)
+        case CTSignal(x=ct, axis_func_settings=axis_func_settings, axis_func=axis_func, x_label=x_label, y_label=y_label):
+            visualize_CT_signal(ct, getattr(ax, axis_func), axis_func_settings, start_pos, end_pos)
             ax.set_xlabel(x_label)
             ax.set_ylabel(y_label)
     
