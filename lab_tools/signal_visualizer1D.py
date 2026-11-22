@@ -70,36 +70,45 @@ class CTSignal:
 
 type Signal = DTSignal | DTSignalFromCTSignal | DTSignalFromCTSignalAndCTSignal | CTSignal
 
-def show_overlapped_signals(xs: list[Signal], start_pos: float, end_pos: float):
+def show_many_signals(xs: list[Signal], start_pos: float, end_pos: float):
     fig, axes = plt.subplots(len(xs), 1, figsize=(9, 6), sharex=True, squeeze=False)
     for x, ax in zip(xs, axes.flat):
-        match x:
-            case DTSignal(x=dt, x_label=x_label, y_label=y_label, stem_settings=stem_settings):
-                visualize_DT_signal(dt, create_stem_func(ax, stem_settings), start_pos, end_pos)
-                ax.set_xlabel(x_label)
-                ax.set_ylabel(y_label)
-
-            case DTSignalFromCTSignal(x=ct, x_label=x_label, y_label=y_label, stem_settings=stem_settings, sample_rate=sample_rate):
-                stem_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
-                visualize_DT_from_CT_signal(ct, create_stem_func(ax, stem_settings), start_pos, end_pos, sample_rate)
-                ax.set_xlabel(x_label)
-                ax.set_ylabel(y_label)
-
-            case DTSignalFromCTSignalAndCTSignal(x=ct, x_label=x_label, y_label=y_label, stem_settings=stem_settings, plot_settings=plot_settings, sample_rate=sample_rate):
-                stem_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
-                visualize_DT_from_CT_signal(ct, create_stem_func(ax, stem_settings), start_pos, end_pos, sample_rate)
-                plot_settings["label"] = f"CT for {sample_rate} sample_rate"
-                visualize_CT_signal(ct, create_plot_func(ax, plot_settings), start_pos, end_pos)
-                ax.set_xlabel(x_label)
-                ax.set_ylabel(y_label)
-
-            case CTSignal(x=ct, x_label=x_label, y_label=y_label, plot_settings=plot_settings):
-                visualize_CT_signal(ct, create_plot_func(ax, plot_settings), start_pos, end_pos)
-                ax.set_xlabel(x_label)
-                ax.set_ylabel(y_label)
-        
-        ax.legend(loc='upper right')
+        find_and_create_visualization(x, ax, start_pos, end_pos)
     plt.tight_layout()
 
+def show_many_overlapped_signals(xs: list[Signal], start_pos: float, end_pos: float):
+    fig, ax = plt.subplots(figsize=(9, 6))
+    for x in xs:
+        find_and_create_visualization(x, ax, start_pos, end_pos)
+    plt.tight_layout()
+
+def find_and_create_visualization(x: Signal, ax: Axes, start_pos: float, end_pos: float):
+    match x:
+        case DTSignal(x=dt, x_label=x_label, y_label=y_label, stem_settings=stem_settings):
+            visualize_DT_signal(dt, create_stem_func(ax, stem_settings), start_pos, end_pos)
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label)
+
+        case DTSignalFromCTSignal(x=ct, x_label=x_label, y_label=y_label, stem_settings=stem_settings, sample_rate=sample_rate):
+            stem_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
+            visualize_DT_from_CT_signal(ct, create_stem_func(ax, stem_settings), start_pos, end_pos, sample_rate)
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label)
+
+        case DTSignalFromCTSignalAndCTSignal(x=ct, x_label=x_label, y_label=y_label, stem_settings=stem_settings, plot_settings=plot_settings, sample_rate=sample_rate):
+            stem_settings["label"] = f"DT from CT at {sample_rate} sample_rate"
+            visualize_DT_from_CT_signal(ct, create_stem_func(ax, stem_settings), start_pos, end_pos, sample_rate)
+            plot_settings["label"] = f"CT for {sample_rate} sample_rate"
+            visualize_CT_signal(ct, create_plot_func(ax, plot_settings), start_pos, end_pos)
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label)
+
+        case CTSignal(x=ct, x_label=x_label, y_label=y_label, plot_settings=plot_settings):
+            visualize_CT_signal(ct, create_plot_func(ax, plot_settings), start_pos, end_pos)
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label)
+    
+    ax.legend(loc='upper right')
+    
 def show_signal(x: Signal, start_pos: float, end_pos: float):
-    show_overlapped_signals([x], start_pos, end_pos)
+    show_many_signals([x], start_pos, end_pos)
